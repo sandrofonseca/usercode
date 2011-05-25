@@ -110,8 +110,12 @@ private:
   UInt_t  nSimMu;
   Int_t   pdgSim[nMuMax];
   Float_t pSim[nMuMax];
+
+  Float_t abspSim[nMuMax];
+  Float_t abspTrackerOut[nMuMax];
   Float_t pTrackerOut[nMuMax];
-  Float_t pMuonIn[nMuMax];
+ 
+ Float_t pMuonIn[nMuMax];
   Float_t pMuonOut[nMuMax];
   Float_t ptSim[nMuMax];
   Float_t ptTrackerIn[nMuMax];
@@ -166,9 +170,13 @@ private:
   Int_t   chaGLTK[nMuMax];
 
 // List of Histos to be filled :
-
+////////////////////////////////////
+//Tracker plots(S.Fonseca)
   TH1F *trackerPTOn;
   TH1F *trackerPTIn;
+  TH1F *DifftrackerPoutPgen;
+  TH1F *DifftrackerPoutPgenInvPgen;
+  /////////////////////////////////
   TH1F *GenPtHisto;
   TH1F *GenPtDetHisto[4];
   TH1F *GenEtaHisto , *GenAbsEtaHisto;

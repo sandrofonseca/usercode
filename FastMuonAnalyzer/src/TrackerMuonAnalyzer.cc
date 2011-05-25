@@ -135,6 +135,8 @@ void TrackerMuonAnalyzer::beginJob(){
  {
  trackerPTIn= new TH1F("trackerPtIn","trackerIn p_{T}",100,999.90,1000.10);
  trackerPTOn= new TH1F("trackerPtOn","trackerOut p_{T}",100,999.90,1000.10);
+ DifftrackerPoutPgen = new TH1F("DifftrackerPoutPgen","DifftrackerPoutPgen",100,0.0,2.0);
+ DifftrackerPoutPgenInvPgen = new TH1F("DifftrackerPoutPgenInvPgen","DifftrackerPoutPgenInvPgen",100,0.0,0.0005);
  }
 
 
@@ -583,7 +585,8 @@ void TrackerMuonAnalyzer::endJob(){
   
   trackerPTIn->Write();
   trackerPTOn->Write();
-
+  DifftrackerPoutPgen->Write();
+  DifftrackerPoutPgenInvPgen->Write();
 
   for (int iDet=0;iDet<4;iDet++) GenPtDetHisto[iDet]->Write();
   GenEtaHisto->Write();
@@ -1055,14 +1058,23 @@ void TrackerMuonAnalyzer::analyze(const Event & event, const EventSetup& eventSe
 
     pSim[iMu] = (*simTrack).momentum().P();
     pTrackerOut[iMu] = (*simTrack).trackerSurfaceMomentum ().P();
-    
+    //Tracker Hist
+    abspSim[iMu] = abs(pSim[iMu]);
+  
+    abspTrackerOut[iMu] = abs(pTrackerOut[iMu]);
 
+     
     ptTrackerIn[iMu] = sqrt(pow((*simTrack).momentum().px(),2) +
                              pow((*simTrack).momentum().py(),2) );
 
     ptTrackerOut[iMu] = sqrt(pow((*simTrack).trackerSurfaceMomentum().px(),2) + 
 			     pow((*simTrack).trackerSurfaceMomentum().py(),2) );
 
+
+     
+    DifftrackerPoutPgen->Fill(abs(pTrackerOut[iMu]-pSim[iMu]));
+
+    DifftrackerPoutPgenInvPgen->Fill(abs(pTrackerOut[iMu]-pSim[iMu])/(abspSim[iMu]));
 
   
     trackerPTIn->Fill(ptTrackerIn[iMu]);

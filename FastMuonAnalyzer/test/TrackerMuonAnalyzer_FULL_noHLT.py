@@ -40,23 +40,38 @@ process.source = cms.Source("PoolSource",
 #    '/store/relval/CMSSW_3_5_8/RelValSingleMuPt1000/GEN-SIM-RECO/MC_3XY_V26-v1/0016/84DFCED7-4E52-DF11-90CC-0018F3D09692.root',
 #    '/store/relval/CMSSW_3_5_8/RelValSingleMuPt1000/GEN-SIM-RECO/MC_3XY_V26-v1/0016/100ED752-4D52-DF11-A2B8-002618943907.root'
 
-        '/store/relval/CMSSW_3_10_0_pre7/RelValSingleMuPt1000/GEN-SIM-RECO/MC_310_V1-v1/0103/9EBB6657-45FD-DF11-9E3C-002618943918.root',
-        '/store/relval/CMSSW_3_10_0_pre7/RelValSingleMuPt1000/GEN-SIM-RECO/MC_310_V1-v1/0101/F2216E7E-E9FC-DF11-93F4-003048678B0E.root',
-        '/store/relval/CMSSW_3_10_0_pre7/RelValSingleMuPt1000/GEN-SIM-RECO/MC_310_V1-v1/0101/64190210-E7FC-DF11-8F95-002618943914.root'
+#        '/store/relval/CMSSW_3_10_0_pre7/RelValSingleMuPt1000/GEN-SIM-RECO/MC_310_V1-v1/0103/9EBB6657-45FD-DF11-9E3C-002618943918.root',
+#        '/store/relval/CMSSW_3_10_0_pre7/RelValSingleMuPt1000/GEN-SIM-RECO/MC_310_V1-v1/0101/F2216E7E-E9FC-DF11-93F4-003048678B0E.root',
+#        '/store/relval/CMSSW_3_10_0_pre7/RelValSingleMuPt1000/GEN-SIM-RECO/MC_310_V1-v1/0101/64190210-E7FC-DF11-8F95-002618943914.root'
+
+
+        '/store/relval/CMSSW_4_1_2/RelValSingleMuPt1000/GEN-SIM-RECO/MC_311_V2-v1/0018/5268ABFF-F044-E011-A5B3-00304867903E.root',
+        '/store/relval/CMSSW_4_1_2/RelValSingleMuPt1000/GEN-SIM-RECO/MC_311_V2-v1/0021/2CE84A88-9145-E011-9525-0018F3D095FA.root'#,
+       # '/store/relval/CMSSW_4_2_0_pre8/RelValSingleMuPt1000/GEN-SIM-RECO/MC_42_V7-v1/0043/44D6DB7D-D556-E011-8706-00261894388F.root'
+
+
     
     )
 )
+#######################################################################################################################################33
+process.TFileService = cms.Service("TFileService",
+ 
+    fileName = cms.string('TrackerMuonAnalyzer_FULL_RelValSingleMuPt1000_May03.root')
+)
 
+
+
+#############################################################################################################
 process.TrackerMuonAnalyzer = cms.EDAnalyzer("TrackerMuonAnalyzer",
 
-    rootFileName = cms.untracked.string('TrackerMuonAnalyzer_FULL_RelValSingleMuPt1000.root'),
+#    rootFileName = cms.untracked.string('TrackerMuonAnalyzer_FULL_RelValSingleMuPt1000_May03.root'),
 
     FastSim = cms.untracked.bool(False),
     IgnoreMissingCollections = cms.untracked.bool(True),
     #RootTree = cms.untracked.bool(True),
     #Debug = cms.untracked.bool(False),
     RootTree = cms.untracked.bool(False),
-    Debug = cms.untracked.bool(True),
+    Debug = cms.untracked.bool(False),
     useGen = cms.untracked.bool(False),
     useReco = cms.untracked.bool(False),
     useEff = cms.untracked.bool(False),
@@ -64,6 +79,9 @@ process.TrackerMuonAnalyzer = cms.EDAnalyzer("TrackerMuonAnalyzer",
 
     labelSimVertex = cms.InputTag("g4SimHits"),
     labelSimTrack = cms.InputTag("g4SimHits"),
+    labelSimHitsTOB = cms.InputTag("g4SimHits","TrackerHits"),
+    labelSimHitsTIB = cms.InputTag("g4SimHits","TrackerHits"),
+
     dtSimHits = cms.InputTag("MISSING"),
     cscSimHits = cms.InputTag("MISSING"),
     rpcSimHits = cms.InputTag("MISSING"),

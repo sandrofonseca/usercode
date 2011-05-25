@@ -2,7 +2,7 @@
 # using: 
 # Revision: 1.293 
 # Source: /cvs_server/repositories/CMSSW/CMSSW/Configuration/PyReleaseValidation/python/ConfigBuilder.py,v 
-# with command line options: SingleMuPt1000_cfi.py -s GEN,FASTSIM,HLT:GRun,VALIDATION --pileup=NoPileUp --geometry DB --conditions=auto:startup --eventcontent=FEVTDEBUGHLT --datatier GEN-SIM-DIGI-RECO -n 10 --no_exec
+# with command line options: SingleMuPt1000_cfi.py -s GEN,FASTSIM,HLT:GRun,VALIDATION --pileup=NoPileUp --geometry DB --conditions=auto:startup --eventcontent=FEVTDEBUGHLT --datatier GEN-SIM-DIGI-RECO -n 1000000
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('HLT')
@@ -38,7 +38,7 @@ process.options = cms.untracked.PSet(
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
     version = cms.untracked.string('$Revision: 1.293 $'),
-    annotation = cms.untracked.string('SingleMuPt1000_cfi.py nevts:10'),
+    annotation = cms.untracked.string('SingleMuPt1000_cfi.py nevts:1000000'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 
@@ -47,7 +47,15 @@ process.configurationMetadata = cms.untracked.PSet(
 process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     outputCommands = process.FEVTDEBUGHLTEventContent.outputCommands,
-    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_test2.root'),
+    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_default_perrotta_test.root'),
+#    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_default_TrueMuonBrem.root'),
+#    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_Case1.root'),#
+#    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_Case2.root'),#
+#    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_Case3.root'),#
+#    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_Case4.root'),#
+#    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_Case5.root'),#
+##    fileName = cms.untracked.string('SingleMuPt1000_cfi_py_GEN_FASTSIM_HLT_VALIDATION_Case6.root'),#
+
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM-DIGI-RECO')
@@ -60,6 +68,15 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
 # Additional output definition
 
 # Other statements
+process.famosSimHits.MaterialEffects.MuonBremsstrahlung = True #Case 1, 2 and 3
+##process.famosSimHits.MaterialEffects.MuonBremsstrahlung = False #Case 4,5 and 6
+# Smallest bremsstrahlung energy fraction (wrt to the electron energy)
+#process.famosSimHits.MaterialEffects.bremEnergyFraction = cms.double(0.005) #Default Case 
+
+#process.famosSimHits.MaterialEffects.bremEnergyFraction = cms.double(0.0005) #Case_1 and Case 4 
+#process.famosSimHits.MaterialEffects.bremEnergyFraction = cms.double(0.05)  #Case_2 and case 5
+#process.famosSimHits.MaterialEffects.bremEnergyFraction = cms.double(0.5)   #Case_3 and Case 6
+
 process.famosSimHits.SimulateCalorimetry = True
 process.famosSimHits.SimulateTracking = True
 process.simulation = cms.Sequence(process.simulationWithFamos)
@@ -68,7 +85,7 @@ process.Realistic7TeVCollisionVtxSmearingParameters.type = cms.string("BetaFunc"
 process.famosSimHits.VertexGenerator = process.Realistic7TeVCollisionVtxSmearingParameters
 process.famosPileUp.VertexGenerator = process.Realistic7TeVCollisionVtxSmearingParameters
 process.mix.playback = True
-process.GlobalTag.globaltag = 'START42_V3::All'
+process.GlobalTag.globaltag = 'START311_V2::All'
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     PGunParameters = cms.PSet(
