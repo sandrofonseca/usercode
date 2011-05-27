@@ -13,9 +13,11 @@ cvs co -r V01-04-22  FastSimulation/TrajectoryManager
 cvs co -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzerscvs co -r V00-00-01  -d  FastMuonBremAnalyzers/Photon_FastSim_Analyzer UserCode/FastMuonBremAnalyzers/Photon_FastSim_Analyzer
 # G4 Observer
 cvs co -r V00-00-01  -d  FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/FastMuonBremAnalyzers/ElectronBremAnalysis
+scram build -c
 
 #CPU timing tests
 cvs co -d CMSSW_4_2_0/src/ UserCode/FastMuonBremAnalyzers/timing_cpu_test/timing.cpp 
+
 
 
 scramv1 b -j 4
