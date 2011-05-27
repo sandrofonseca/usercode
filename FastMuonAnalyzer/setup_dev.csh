@@ -9,8 +9,11 @@ cvs co -r V04-05-09  FastSimulation/MaterialEffects
 cvs co -r V00-03-11  FastSimulation/MuonSimHitProducer                
 cvs co -r V01-04-22  FastSimulation/TrajectoryManager  
 
-#Analysis code for Tracker
-cvs co -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
+#Analysis code for Tracker and photons in FastSim
+cvs co -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzerscvs co -d -r V00-00-01 FastMuonBremAnalyzers/Photon_FastSim_Analyzer UserCode/FastMuonBremAnalyzers/Photon_FastSim_Analyzer
+# G4 Observer
+cvs co -d -r V00-00-01 FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/FastMuonBremAnalyzers/ElectronBremAnalysis
+
 
 scramv1 b -j 4
 popd
