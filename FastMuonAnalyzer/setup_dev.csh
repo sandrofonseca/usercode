@@ -14,6 +14,9 @@ cvs co -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
 # G4 Observer
 cvs co -d -r V00-00-01 FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/FastMuonBremAnalyzers/ElectronBremAnalysis
 
+#CPU timing tests
+cvs co -d CMSSW_4_2_0/src/ UserCode/FastMuonBremAnalyzers/timing_cpu_test/timing.cpp 
+
 
 scramv1 b -j 4
 popd
