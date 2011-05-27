@@ -12,7 +12,7 @@ process.load("Geometry.MuonNumbering.muonNumberingInitialization_cfi")
 process.load("Geometry.DTGeometryBuilder.dtGeometry_cfi")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 #process.GlobalTag.globaltag = "MC_3XY_V21::All"
-process.GlobalTag.globaltag = "MC_311_V2::All"
+process.GlobalTag.globaltag = "START42_V9::All"
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
