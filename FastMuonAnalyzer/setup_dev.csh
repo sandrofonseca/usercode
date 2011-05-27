@@ -10,9 +10,9 @@ cvs co -r V00-03-11  FastSimulation/MuonSimHitProducer
 cvs co -r V01-04-22  FastSimulation/TrajectoryManager  
 
 #Analysis code for Tracker and photons in FastSim
-cvs co -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzerscvs co -d -r V00-00-01 FastMuonBremAnalyzers/Photon_FastSim_Analyzer UserCode/FastMuonBremAnalyzers/Photon_FastSim_Analyzer
+cvs co -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzerscvs co -r V00-00-01  -d  FastMuonBremAnalyzers/Photon_FastSim_Analyzer UserCode/FastMuonBremAnalyzers/Photon_FastSim_Analyzer
 # G4 Observer
-cvs co -d -r V00-00-01 FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/FastMuonBremAnalyzers/ElectronBremAnalysis
+cvs co -r V00-00-01  -d  FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/FastMuonBremAnalyzers/ElectronBremAnalysis
 
 #CPU timing tests
 cvs co -d CMSSW_4_2_0/src/ UserCode/FastMuonBremAnalyzers/timing_cpu_test/timing.cpp 
