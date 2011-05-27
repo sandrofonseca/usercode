@@ -10,7 +10,7 @@ cvs co -r V00-03-11  FastSimulation/MuonSimHitProducer
 cvs co -r V01-04-22  FastSimulation/TrajectoryManager  
 
 #Analysis code for Tracker
-cvs co -r V00-00-02 -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
+cvs co -r -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
 
 scramv1 b -j 4
 popd
