@@ -16,7 +16,7 @@ cvs co -r V00-00-01  -d  FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/Fas
 scram build -c
 
 #CPU timing tests
-cvs co -d CMSSW_4_2_0/src/ UserCode/FastMuonBremAnalyzers/timing_cpu_test/timing.cpp 
+cvs co -d FastMuonBremAnalyzers/timing_cpu_test UserCode/FastMuonBremAnalyzers/timing_cpu_test/timing.cpp 
 
 
 
