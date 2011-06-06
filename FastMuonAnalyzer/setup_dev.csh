@@ -36,8 +36,8 @@ cp UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MuonBremsstrahl
 cp UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
 
 ##Muon Chambers improvements
-cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc /FastSimulation/MuonSimHitProducer/src
-cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h /FastSimulation/MuonSimHitProducer/interface
+cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc FastSimulation/MuonSimHitProducer/src
+cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h FastSimulation/MuonSimHitProducer/interface
 cp UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
 
 #Analysis code for Tracker
