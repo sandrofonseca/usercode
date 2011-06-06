@@ -10,6 +10,10 @@ cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/Muon
 cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MaterialEffects.h
 cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MuonBremsstrahlungSimulator.h
 cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
+# new improvements of Muon chambers
+cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc 
+cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h 
+cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
 
 
 pushd $CMSSW_BASE/src
@@ -21,7 +25,7 @@ cvs co -r V01-22-02  FastSimulation/Configuration
 cvs co -r V04-05-09  FastSimulation/MaterialEffects                   
 cvs co -r V00-03-11  FastSimulation/MuonSimHitProducer                
 cvs co -r V01-04-22  FastSimulation/TrajectoryManager  
-
+#Calorimetry improvements
 cp UserCode/Calo_May_30/FastSimulation/Calorimetry/src/CalorimetryManager.cc FastSimulation/Calorimetry/src
 cp UserCode/Calo_May_30/FastSimulation/Calorimetry/interface/CalorimetryManager.h FastSimulation/Calorimetry/interface
 
@@ -31,9 +35,12 @@ cp UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MaterialEffects
 cp UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MuonBremsstrahlungSimulator.h FastSimulation/MaterialEffects/interface
 cp UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
 
+##Muon Chambers improvements
+cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc /FastSimulation/MuonSimHitProducer/src
+cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h /FastSimulation/MuonSimHitProducer/interface
+cp UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
 
 #Analysis code for Tracker
-
 cvs co -r V00-00-02 -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
 cvs co -r V00-00-01 -d FastMuonBremAnalyzers/Photon_FastSim_Analyzer  UserCode/FastMuonBremAnalyzers/Photon_FastSim_Analyzer
 # G4 Observer
