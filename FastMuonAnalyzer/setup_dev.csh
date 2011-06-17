@@ -1,19 +1,19 @@
 #!/bin/tcsh
 
 #pushd $CMSSW_BASE/src
-# New improvements for HCAL and Muon Brem
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/Calorimetry/src/CalorimetryManager.cc
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/Calorimetry/interface/CalorimetryManager.h
+# New improvements for ECAL, HCAL and Muon Brem
+cvs co -r UserCode/Calo_May_30/FastSimulation/Calorimetry/src/CalorimetryManager.cc
+cvs co -r UserCode/Calo_May_30/FastSimulation/Calorimetry/interface/CalorimetryManager.h
 
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/MaterialEffects.cc
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/MuonBremsstrahlungSimulator.cc
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MaterialEffects.h
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MuonBremsstrahlungSimulator.h
-cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
+cvs co -r UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/MaterialEffects.cc
+cvs co -r UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/MuonBremsstrahlungSimulator.cc
+cvs co -r UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MaterialEffects.h
+cvs co -r UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MuonBremsstrahlungSimulator.h
+cvs co -r UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
 # new improvements of Muon chambers
-cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc 
-cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h 
-cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
+cvs co -r  UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc 
+cvs co -r  UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h 
+#cvs co -r  V00-02-00 UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
 
 
 pushd $CMSSW_BASE/src
@@ -38,7 +38,7 @@ cp UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cf
 ##Muon Chambers improvements
 cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/src/MuonSimHitProducer.cc FastSimulation/MuonSimHitProducer/src
 cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHitProducer.h FastSimulation/MuonSimHitProducer/interface
-cp UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
+#cp UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
 
 #Analysis code for Tracker
 cvs co -r V00-00-02 -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
@@ -51,15 +51,6 @@ cvs co -r V00-00-01 -d FastMuonBremAnalyzers/Photon_FastSim_Analyzer  UserCode/F
 cvs co -d FastMuonBremAnalyzers/timing_cpu_test UserCode/FastMuonBremAnalyzers/timing_cpu_test/timing.cpp 
 
 
-# New improvements for HCAL and Muon Brem
-#cvs co -r V00-04-00 UserCode/Calo_May_30/Calorimetry/src/CalorimetryManager.cc
-#cvs co -r V00-04-00 UserCode/Calo_May_30/Calorimetry/interface/CalorimetryManager.h
-
-#cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/MaterialEffects.cc
-#cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/src/MuonBremsstrahlungSimulator.cc
-#cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MaterialEffects.h
-#cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/interface/MuonBremsstrahlungSimulator.h
-#cvs co -r V00-04-00 UserCode/Calo_May_30/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py
 
 
 
