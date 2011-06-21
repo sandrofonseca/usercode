@@ -41,7 +41,7 @@ cp UserCode/MuonSim_June01/FastSimulation/MuonSimHitProducer/interface/MuonSimHi
 #cp UserCode/MuonSim_June01/FastSimulation/MaterialEffects/python/MaterialEffects_cfi.py FastSimulation/MaterialEffects/python
 
 #Analysis code for Tracker
-cvs co -r V00-00-02 -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers
+cvs co -r V00-00-04 -d FastMuonBremAnalyzers/FastMuonAnalyzer  UserCode/FastMuonBremAnalyzers/FastMuonAnalyzer
 cvs co -r V00-00-01 -d FastMuonBremAnalyzers/Photon_FastSim_Analyzer  UserCode/FastMuonBremAnalyzers/Photon_FastSim_Analyzer
 # G4 Observer
 #cvs co -r V00-00-01  -d  FastMuonBremAnalyzers/ElectronBremAnalysis UserCode/FastMuonBremAnalyzers/ElectronBremAnalysis
