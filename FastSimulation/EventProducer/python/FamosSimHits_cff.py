@@ -16,8 +16,6 @@ famosSimHits = cms.EDProducer("FamosProducer",
     TrackerSimHitsBlock,
     # Material effects to be simulated in the tracker material and associated cuts
     MaterialEffectsBlock,
-    # Material effects for muons in Muon Chambers                          
-    MaterialEffectsForMuonsBlock,
     # Material effects for muons in ECAL
     MaterialEffectsForMuonsInECALBlock,
     # Material effects for muons in HCAL
