@@ -15,6 +15,17 @@
 #include <map>
 #include <algorithm>
 
+#include "TrackingTools/GeomPropagators/interface/Propagator.h"
+
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "FastSimulation/ParticlePropagator/interface/MagneticFieldMap.h"
+
+#include "FWCore/Framework/interface/EDProducer.h"
+#include "TrackPropagation/SteppingHelixPropagator/interface/SteppingHelixStateInfo.h"
+
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
+#include "DataFormats/GeometryVector/interface/GlobalVector.h"
+
 class FSimEvent;
 class FSimTrack;
 class RawParticle;
@@ -31,9 +42,19 @@ class GflashPiKShowerProfile;
 class GflashProtonShowerProfile;
 class GflashAntiProtonShowerProfile;
 
+//class MuonServiceProxy;
+class MagneticField;
+class MaterialEffects;
+class TrajectoryStateOnSurface;
+class Propagator;
+//class TrackingComponentsRecord.h;
+
 namespace edm { 
   class ParameterSet;
+  class EventSetup;
+  class Event;
 }
+
 
 class CalorimetryManager{
 
@@ -46,6 +67,8 @@ class CalorimetryManager{
                      const edm::ParameterSet& fastGflash,
 		     const RandomEngine* engine);
   ~CalorimetryManager();
+
+
 
   // Does the real job
   void reconstruct();
@@ -64,8 +87,15 @@ class CalorimetryManager{
 
   void loadMuonSimTracks(edm::SimTrackContainer & m) const;
 
+  void SetMagneticField(const MagneticField* magField);
+
+  void SetPropagator(const Propagator* ptr);
+
+
+
  private:
-  // Simulation of electromagnetic showers in PS, ECAL, HCAL
+
+// Simulation of electromagnetic showers in PS, ECAL, HCAL
   void EMShowerSimulation(const FSimTrack& myTrack);
   
   // Simulation of electromagnetic showers in VFCAL
@@ -88,6 +118,7 @@ class CalorimetryManager{
   void respCorr(double);
 
   void clean(); 
+  //void propagate(SteppingHelixStateInfo& state, const Plane& plane);
 
  private:
 
@@ -98,6 +129,8 @@ class CalorimetryManager{
 
   HCALResponse* myHDResponse_;
   HSParameters * myHSParameters_;
+
+ 
 
   // In the not unfolded case (standard) the most inner vector will be of size = 1 
   // the preshower does not have hashed_indices, hence the map 
@@ -127,10 +160,8 @@ class CalorimetryManager{
   double pulledPadSurvivalProbability_;
   double crackPadSurvivalProbability_;
   double spotFraction_;
-  //  double radiusFactor_;
-  double radiusFactorEB_ , radiusFactorEE_;
+  double radiusFactor_;
   std::vector<double> radiusPreshowerCorrections_;
-  double aTerm, bTerm;
   std::vector<double> mipValues_;
   int gridSize_;
   std::vector<double> theCoreIntervals_,theTailIntervals_;
@@ -166,5 +197,19 @@ class CalorimetryManager{
   GflashPiKShowerProfile *thePiKProfile;
   GflashProtonShowerProfile *theProtonProfile;
   GflashAntiProtonShowerProfile *theAntiProtonProfile;
+  
+  const MagneticField*  magField_;
+  const Propagator* ptr_;
+  
+   //create photon
+     RawParticle thePhoton;
+
+   /*   GlobalPoint startingPosition; */
+/*      GlobalVector startingMomentum; */
+    
+
+      protected: 
+  std::vector<RawParticle> _theUpdatedState;
+
 };
 #endif

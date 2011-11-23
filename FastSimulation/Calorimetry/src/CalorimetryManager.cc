@@ -2,6 +2,11 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Utilities/interface/RandomNumberGenerator.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+
 // Fast Simulation headers
 #include "FastSimulation/Calorimetry/interface/CalorimetryManager.h"
 #include "FastSimulation/Event/interface/FSimEvent.h"
@@ -51,6 +56,23 @@
 //#include "DataFormats/EcalDetId/interface/EcalDetId.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+//SHP includes (Sandro Fonseca de Souza 22 Jun 2011 Beta test on Calo)
+//#include "TrackingTools/TrajectoryState/interface/FreeTrajectoryState.h"
+//#include "TrackingTools/TrajectoryParametrization/interface/GlobalTrajectoryParameters.h"
+
+#include "TrackPropagation/SteppingHelixPropagator/interface/SteppingHelixPropagator.h"
+#include "DataFormats/GeometrySurface/interface/PlaneBuilder.h"
+#include "DataFormats/GeometrySurface/interface/TangentPlane.h"
+#include "FastSimulation/TrajectoryManager/interface/LocalMagneticField.h"
+#include "DataFormats/TrajectorySeed/interface/PropagationDirection.h"
+#include "TrackingTools/GeomPropagators/interface/Propagator.h"
+
+
+//photon
+#include "FastSimulation/Particle/interface/RawParticle.h"
+//#include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+
+
 
 using namespace edm;
 
@@ -75,7 +97,7 @@ CalorimetryManager::CalorimetryManager(FSimEvent * aSimEvent,
   : 
   mySimEvent(aSimEvent), 
   random(engine),initialized_(false),
-  theMuonEcalEffects(0), theMuonHcalEffects (0)
+  theMuonEcalEffects(0), theMuonHcalEffects (0),magField_(0), ptr_(0)
 
 {
 
@@ -128,7 +150,10 @@ CalorimetryManager::CalorimetryManager(FSimEvent * aSimEvent,
   myHistos->book("h400",100,-10.,10.,100,0.,35.);
   myHistos->book("h410",720,-M_PI,M_PI);
 #endif
-  myCalorimeter_ = 
+
+
+
+ myCalorimeter_ = 
     new CaloGeometryHelper(fastCalo);
   myHDResponse_ = 
     new HCALResponse(fastCalo.getParameter<edm::ParameterSet>("HCALResponse"),
@@ -155,7 +180,33 @@ CalorimetryManager::CalorimetryManager(FSimEvent * aSimEvent,
     theMuonHcalEffects = new MaterialEffects(fastMuHCAL,random);
 
 }
+//////////////////////////////
 
+void CalorimetryManager::SetMagneticField(const MagneticField* magField){
+
+
+  
+  magField_ = magField;
+ 
+
+
+
+}
+
+////////////////////////////////////////////////////////////////////////
+
+void CalorimetryManager::SetPropagator(const Propagator* ptr){
+
+
+  
+  ptr_ = ptr;
+ 
+
+
+
+}
+
+//////////////////////////////////
 void CalorimetryManager::clean()
 {
   unsigned size=firedCellsEB_.size();
@@ -237,6 +288,8 @@ void CalorimetryManager::reconstruct()
   LogInfo("FastCalorimetry") << "Reconstructing " << (int) mySimEvent->nTracks() << " tracks." << std::endl;
   for( int fsimi=0; fsimi < (int) mySimEvent->nTracks() ; ++fsimi) {
 
+   
+
     FSimTrack& myTrack = mySimEvent->track(fsimi);
 
     int pid = abs(myTrack.type());
@@ -244,19 +297,19 @@ void CalorimetryManager::reconstruct()
     if (debug_) {
       LogDebug("FastCalorimetry") << " ===> pid = "  << pid << std::endl;      
     }
-    
+    // std::cout << " ===> pid = "  << pid << std::endl; 
     
     // Check that the particle hasn't decayed
-    if(myTrack.noEndVertex()) {
+    if(myTrack.noEndVertex() ) {
       // Simulate energy smearing for photon and electrons
-      if ( pid == 11 || pid == 22 ) {
+      if ( pid == 11 || pid == 22  ) {
 	  
-	  
-	   if ( myTrack.onEcal() ) 
+	if ( myTrack.onEcal()) 
 	    EMShowerSimulation(myTrack);
-	  else if ( myTrack.onVFcal() )
-	    reconstructHCAL(myTrack);
-	   
+	else if ( myTrack.onVFcal())
+	     reconstructHCAL(myTrack);
+     
+
       } // electron or photon
       else if (pid==13)
 	{
@@ -286,17 +339,20 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
   if (debug_) {
     LogDebug("FastCalorimetry") << " EMShowerSimulation "  <<myTrack << std::endl;      
   }
-  
-  //  std::cout << " Simulating " << myTrack << std::endl;
+ 
+
+  // std::cout << " EMShowerSimulation "  << myTrack << std::endl; 
+     
+   
 
   // The Particle at ECAL entrance
-  //  std::cout << " Before ecalEntrance " << std::endl;
-  myPart = myTrack.ecalEntrance(); 
-
+  // std::cout << " Before ecalEntrance " << "Energy limit: " << myPart.e() << "PDI: "  << myTrack.type() << std::endl;
+    
+   myPart = myTrack.ecalEntrance(); 
+   //  std::cout << " Before ecalEntrance " << myPart  << std::endl;
   // protection against infinite loop.  
   if ( myTrack.type() == 22 && myPart.e()<0.055) return; 
-
-
+ 
   // Barrel or Endcap ?
   int onEcal = myTrack.onEcal();
   int onHcal = myTrack.onHcal();
@@ -306,7 +362,6 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
   // The entrance in ECAL
   XYZPoint ecalentrance = myPart.vertex().Vect();
   
-  //  std::cout << " Ecal entrance " << ecalentrance << std::endl;
   
   // The preshower
   PreshowerHitMaker * myPreshower = NULL ;
@@ -335,6 +390,8 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
       myPreshower->setMipEnergy(mipValues_[0],mipValues_[1]);
     }
 
+  
+
   // The ECAL Properties
   EMECALShowerParametrization 
     showerparam(myCalorimeter_->ecalProperties(onEcal), 
@@ -346,9 +403,10 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
 		RCFactor_,
 		RTFactor_);
 
+
+
   // Photons : create an e+e- pair
   if ( myTrack.type() == 22 ) {
-    
     // Depth for the first e+e- pair creation (in X0)
     X0depth = -log(random->flatShoot()) * (9./7.);
     
@@ -362,28 +420,35 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
     do {
       xe = random->flatShoot()*(1.-2.*xm) + xm;
       weight = 1. - 4./3.*xe*(1.-xe);
-    } while ( weight < random->flatShoot() );
     
+
+    } while ( weight < random->flatShoot() );
+
+
     // Protection agains infinite loop in Famos Shower
-    if ( myPart.e()*xe < 0.055 || myPart.e()*(1.-xe) < 0.055 ) {
+     if ( myPart.e()*xe < 0.055 || myPart.e()*(1.-xe) < 0.055 ) {
+       if ( myPart.e() > 0.055 ) thePart.push_back(&myPart);
       
-      if ( myPart.e() > 0.055 ) thePart.push_back(&myPart);
-      
-    } else {      
-      
+     } else {      
+     
       myElec = (myPart) * xe;
       myPosi = (myPart) * (1.-xe);
       myElec.setVertex(myPart.vertex());
       myPosi.setVertex(myPart.vertex());
       thePart.push_back(&myElec);
       thePart.push_back(&myPosi);
-    }
+     
+     
+
+     }
   // Electrons
   } else {  
     
     X0depth = 0.;
-    if ( myPart.e() > 0.055 ) thePart.push_back(&myPart);
     
+    if ( myPart.e() > 0.055 ) thePart.push_back(&myPart);
+    //  std::cout << " myPart.e(): "<<  myPart.e() << std::endl;
+
   } 
   
   // After the different protections, this shouldn't happen. 
@@ -398,30 +463,37 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
   double maxEnergy=-1.;
   for(unsigned ip=0;ip < thePart.size();++ip)
     if(thePart[ip]->e() > maxEnergy) maxEnergy = thePart[ip]->e();
-  
+
   // Initialize the Grid in ECAL
   int size = gridSize_;
-  if(maxEnergy>100) size=11;
+   if(maxEnergy>100) size=11;
+   
+
 //  if ( maxEnergy < threshold5x5 ) size = 5;
 //  if ( maxEnergy < threshold3x3 ) size = 3;
-
+   
 
   EMShower theShower(random,aGammaGenerator,&showerparam,&thePart);
 
   double maxShower = theShower.getMaximumOfShower();
+
+
   if (maxShower > 20.) maxShower = 2.; // simple pivot-searching protection 
 
   double depth((X0depth + maxShower) * 
 	       myCalorimeter_->ecalProperties(onEcal)->radLenIncm());
   XYZPoint meanShower = ecalentrance + myPart.Vect().Unit()*depth;
-  
+
+ 
+  //std::cout<<" onEcal:" << onEcal << std::endl;
   //  if(onEcal!=1) return ; 
 
   // The closest crystal
   DetId pivot(myCalorimeter_->getClosestCell(meanShower, true, onEcal==1));
 
   if(pivot.subdetId() == 0) {   // further protection against avbsence of pivot
-    edm::LogWarning("CalorimetryManager") <<  "Pivot for egamma  e = "  << myTrack.hcalEntrance().e() << " is not found at depth " << depth << " and meanShower coordinates = " << meanShower << std::endl; 
+    edm::LogWarning("CalorimetryManager") <<  "Pivot for egamma  e = "  << myTrack.hcalEntrance().e() << " is not found at depth " << depth << " and meanShower coordinates = " << meanShower << std::endl;
+    //   std::cout <<  "Pivot for egamma  e = "  << myTrack.hcalEntrance().e() << " is not found at depth " << depth << " and meanShower coordinates = " << meanShower << std::endl;
     return;
   }
   
@@ -430,11 +502,11 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
   //                                         for EM showers
   myGrid.setPulledPadSurvivalProbability(pulledPadSurvivalProbability_);
   myGrid.setCrackPadSurvivalProbability(crackPadSurvivalProbability_);
-
-  //maximumdepth dependence of the radiusfactorbehindpreshower
-  //First tuning: Shilpi Jain (Mar-Apr 2010); changed after tuning - Feb-July - Shilpi Jain
-  /* **************
   myGrid.setRadiusFactor(radiusFactor_);
+
+
+ //maximumdepth dependence of the radiusfactorbehindpreshower
+ // adjusted by Shilpi Jain (Mar-Apr 2010)
   if(onLayer1 || onLayer2)
     {
       float b               = radiusPreshowerCorrections_[0];
@@ -451,26 +523,6 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
     {
       myGrid.setRadiusFactor(radiusFactor_);
     }
-  ************** */
-  if(myTrack.onEcal() == 2) // if on EE  
-     {
-       if( (onLayer1 || onLayer2) && myPart.e()<=250.)
-         {
-	   double maxdepth        = X0depth+theShower.getMaximumOfShower();
-	   double newRadiusFactor = radiusFactorEE_ * aTerm/(1.+bTerm*maxdepth);
-	   myGrid.setRadiusFactor(newRadiusFactor);
-	 }
-       else // otherwise use the normal radius factor
-         {
-           myGrid.setRadiusFactor(radiusFactorEE_);
-         }
-     }//if(myTrack.onEcal() == 2)
-  else                      // else if on EB
-    {
-      myGrid.setRadiusFactor(radiusFactorEB_);
-    }
-  //(end of) changed after tuning - Feb-July - Shilpi Jain
-
   myGrid.setPreshowerPresent(simulatePreshower_);
   
   // The shower simulation
@@ -479,8 +531,8 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
 //  std::cout << " PS ECAL GAP HCAL X0 " << myGrid.ps1TotalX0()+myGrid.ps2TotalX0() << " " << myGrid.ecalTotalX0();
 //  std::cout << " " << myGrid.ecalHcalGapTotalX0() << " " << myGrid.hcalTotalX0() << std::endl;
 //  std::cout << " PS ECAL GAP HCAL L0 " << myGrid.ps1TotalL0()+myGrid.ps2TotalL0() << " " << myGrid.ecalTotalL0();
-//  std::cout << " " << myGrid.ecalHcalGapTotalL0() << " " << myGrid.hcalTotalL0() << std::endl;
-//  std::cout << "ECAL-HCAL " << myTrack.momentum().eta() << " " <<  myGrid.ecalHcalGapTotalL0() << std::endl;
+//   std::cout << " " << myGrid.ecalHcalGapTotalL0() << " " << myGrid.hcalTotalL0() << std::endl;
+//   std::cout << "ECAL-HCAL " << myTrack.momentum().eta() << " " <<  myGrid.ecalHcalGapTotalL0() << std::endl;
 //
 //  std::cout << " Grid created " << std::endl;
   if(myPreshower) theShower.setPreshower(myPreshower);
@@ -489,22 +541,27 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
 
   theShower.setGrid(&myGrid);
   theShower.setHcal(&myHcalHitMaker);
+  //  std:: cout << " About to compute " << std::endl;
   theShower.compute();
+  //  std::cout << " Coming back from compute" << std::endl;
   //myHistos->fill("h502", myPart->eta(),myGrid.totalX0());
   
   // Save the hits !
   std::map<uint32_t,float>::const_iterator mapitr;
   std::map<uint32_t,float>::const_iterator endmapitr=myGrid.getHits().end();
+  
   for(mapitr=myGrid.getHits().begin();mapitr!=endmapitr;++mapitr)
     {
       if(onEcal==1)
 	{
 	  updateMap(EBDetId(mapitr->first).hashedIndex(), mapitr->second,myTrack.id(),EBMapping_,firedCellsEB_);
+	  //std::cout << " Adding Barrel: " <<mapitr->first << " " << mapitr->second <<std::endl;
+	  //	  std::cout << " myTrack.id(): " << myTrack.id() <<std::endl;
 	}
 	    
       else if(onEcal==2)
 	updateMap(EEDetId(mapitr->first).hashedIndex(), mapitr->second,myTrack.id(),EEMapping_,firedCellsEE_);
-      //      std::cout << " Adding " <<mapitr->first << " " << mapitr->second <<std::endl; 
+      //if (mapitr->second > 0.) std::cout << " Adding EndCaps: " <<mapitr->first << " " << mapitr->second <<std::endl; 
     }
 
   // Now fill the HCAL hits
@@ -512,7 +569,7 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
   for(mapitr=myHcalHitMaker.getHits().begin();mapitr!=endmapitr;++mapitr)
     {
       updateMap(HcalDetId(mapitr->first).hashed_index(),mapitr->second,myTrack.id(),HMapping_,firedCellsHCAL_);
-      //      std::cout << " Adding " <<mapitr->first << " " << mapitr->second <<std::endl; 
+      //if (mapitr->second > 0.) std::cout << " Adding HCAL: " <<mapitr->first << " " << mapitr->second <<std::endl; 
     }
 
   // delete the preshower
@@ -522,11 +579,11 @@ void CalorimetryManager::EMShowerSimulation(const FSimTrack& myTrack) {
       for(mapitr=myPreshower->getHits().begin();mapitr!=endmapitr;++mapitr)
 	{
 	  updateMap(mapitr->first,mapitr->second,myTrack.id(),ESMapping_);
-	  //      std::cout << " Adding " <<mapitr->first << " " << mapitr->second <<std::endl; 
+	  //if (mapitr->second > 0.) std::cout << " Adding PreShower: " <<mapitr->first << " " << mapitr->second <<std::endl; 
 	}
       delete myPreshower;
-  //  std::cout << " Deleting myPreshower " << std::endl;
     }
+  //  std::cout << " Deleting myPreshower " << std::endl;
   
 }
 
@@ -583,7 +640,6 @@ void CalorimetryManager::reconstructECAL(const FSimTrack& track) {
   
   if(sigma>0.)
     emeas = random->gaussShoot(e,sigma);
-  
 
   if(debug_)
     std::cout << "FASTEnergyReconstructor::reconstructECAL : " 
@@ -594,7 +650,7 @@ void CalorimetryManager::reconstructECAL(const FSimTrack& track) {
 	 << "  Emeas = " << emeas << std::endl; 
 
 
-  if(debug_)
+   if(debug_)
     std::cout << "FASTEnergyReconstructor::reconstructECAL : " 
 	 << " Track position - " << trackPosition.Vect() 
 	 << "   bool central - " << central
@@ -1017,9 +1073,13 @@ void CalorimetryManager::HDShowerSimulation(const FSimTrack& myTrack)
 	 << std::endl;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 {
+//ref:http://cmslxr.fnal.gov/lxr/source/Calibration/HcalAlCaRecoProducers/src/AlCaHOCalibProducer.cc#775
+//Initialization SHP
+ SteppingHelixPropagator myHelix(*&magField_,anyDirection);
+ 
   //  TimeMe t(" FASTEnergyReconstructor::HDShower");
   XYZTLorentzVector moment = myTrack.momentum();
 
@@ -1042,21 +1102,98 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
   int hit;
   //  int pid = abs(myTrack.type());
 
-  XYZTLorentzVector trackPosition;
-  if ( myTrack.onEcal() ) {
-    trackPosition=myTrack.ecalEntrance().vertex();
+  // XYZTLorentzVector trackPosition;
+ GlobalPoint startingPosition;
+ GlobalVector startingMomentum;
+ if ( myTrack.onEcal() ){
+      // trackPosition=myTrack.ecalEntrance().vertex();
     hit = myTrack.onEcal()-1;                               //
     myPart = myTrack.ecalEntrance();
-  } else if ( myTrack.onVFcal()) {
-    trackPosition=myTrack.vfcalEntrance().vertex();
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// first implementation of influence of Magnetic field on muon trajectory into ECAL  
+// Sandro F. de Souza
+     
+    startingPosition = GlobalPoint(myTrack.ecalEntrance().x(),myTrack.ecalEntrance().y(),myTrack.ecalEntrance().z());
+
+
+
+    startingMomentum = GlobalVector(myTrack.ecalEntrance().momentum().x(),myTrack.ecalEntrance().momentum().y(),myTrack.ecalEntrance().momentum().z());
+
+     LogDebug("FastCalorimetry")<< " the Muon START Position on ECAL:" << startingPosition << std::endl;
+     LogDebug("FastCalorimetry")<< " the Muon START momentum on ECAL:" << startingMomentum << std::endl;
+   
+  
+
+ } else if ( myTrack.onVFcal()) {
+    //    trackPosition=myTrack.vfcalEntrance().vertex();
     hit = 2;
     myPart = myTrack.vfcalEntrance();
-  }
+ 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// first implementation of influence of Magnetic field on muon trajectory into  VFCAL 
+// Sandro F. de Souza
+     
+    startingPosition = GlobalPoint(myTrack.vfcalEntrance().x(),myTrack.vfcalEntrance().y(),myTrack.vfcalEntrance().z());
+
+
+
+    startingMomentum = GlobalVector(myTrack.vfcalEntrance().momentum().x(),myTrack.vfcalEntrance().momentum().y(),myTrack.vfcalEntrance().momentum().z());
+
+
+    
+
+
+
+    LogDebug("FastCalorimetry")<< " the Muon START Position on VFCAL:" << startingPosition << std::endl;
+    LogDebug("FastCalorimetry")<< " the Muon START momentum on VFCAL:" << startingMomentum << std::endl;
+   
+
+ }
   else
     {
       LogDebug("FastCalorimetry") << " The particle is not in the acceptance " << std::endl;
       return;
     }
+
+  //Setting propagator/////////////////////////////
+//Rotation Matrix
+    float r21 = 0;
+    float r22 = (startingMomentum.unit()).z()/sqrt(1-pow((startingMomentum.unit()).x(),2));
+    float r23 = -(startingMomentum.unit()).y()/sqrt(1-pow((startingMomentum.unit()).x(),2));
+    float r31 = (startingMomentum.unit()).x();
+    float r32 = (startingMomentum.unit()).y();
+    float r33 = (startingMomentum.unit()).z();
+    float r11 = r22*r33-r23*r32;
+    float r12 = r23*r31;
+    float r13 = -r22*r31;
+
+    // std::cout << " the Muon START Position:" << startingPosition << std::endl;
+    //  std::cout << " the Muon START momentum:" << startingMomentum << std::endl;
+     
+  int charge = myTrack.charge(); 
+
+  Surface::RotationType rotation(r11, r12, r13,
+                                  r21, r22, r23,
+                                  r31, r32, r33);
+  PlaneBuilder pb;
+  PlaneBuilder::ReturnType target = pb.plane(startingPosition,rotation);
+  GlobalTrajectoryParameters fts(startingPosition,
+                                 startingMomentum,
+                                 charge,
+				 magField_);
+
+
+  TrajectoryStateOnSurface state (fts, *target);
+  TrajectoryStateOnSurface propagatedState = state;
+
+  SteppingHelixStateInfo shsStart(*(propagatedState.freeTrajectoryState()));
+  LogDebug("FastCalorimetry")<< "Propagating " << propagatedState  << std::endl;
+  // std::cout << "Propagating " << propagatedState  << std::endl;
+  /////////////////////////////////////////////////////////////////////////////////////
+
 
   // int onHCAL = hit + 1; - specially for myCalorimeter->hcalProperties(onHCAL)
   // (below) to get VFcal properties ...
@@ -1079,12 +1216,19 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
     {	
       caloentrance = myTrack.ecalEntrance().vertex().Vect();
       direction = myTrack.ecalEntrance().Vect().Unit();
-    }
+ 
+
+
+
+
+   }
   else if(myTrack.onHcal())
     {
       caloentrance = myTrack.hcalEntrance().vertex().Vect();
       direction = myTrack.hcalEntrance().Vect().Unit();
-    }
+  
+
+  }
   else
     {
       caloentrance = myTrack.vfcalEntrance().vertex().Vect();
@@ -1099,8 +1243,9 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
     }
   else if(myTrack.onHcal())
     {
-      //	std::cout << " CalorimetryManager onHcal " <<  myTrack.onHcal() << " caloentrance" << caloentrance  << std::endl;
-      pivot=myCalorimeter_->getClosestCell(caloentrance,					     
+      std::cout << " CalorimetryManager onHcal " <<  myTrack.onHcal() << " caloentrance" << caloentrance  << std::endl;
+      
+       pivot=myCalorimeter_->getClosestCell(caloentrance,					     
 					   false, false);
     }
   
@@ -1111,16 +1256,19 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
   
   myGrid.setTrackParameters(direction,0,myTrack);
   
-  // Now get the path in the Preshower, ECAL and HCAL along a straight line extrapolation 
-  // but only those in the ECAL are used 
- 
   const std::vector<CaloSegment>& segments=myGrid.getSegments();
   unsigned nsegments=segments.size();
-  
+
+  GlobalPoint Ecal_entrance_segment;
+  GlobalPoint Ecal_exit_segment;
+
   int ifirstHcal=-1;
   int ilastEcal=-1;
   EnergyLossSimulator* energyLossECAL = 0;
- //New muon brem effect  in Calorimetry 16th Jan 2011 (Sandro Fonseca de Souza and Andre Sznajder UERJ/Brazil)
+ //Muon Brem and photo production on ECAL 
+//Sandro Fonseca de Souza (UERJ/Brazil) and Dilson de Jesus Damiao (CBPF/Brazil)
+  //Date 12/10/2011
+
   MuonBremsstrahlungSimulator* muonBremECAL = 0;
  
   if (theMuonEcalEffects) energyLossECAL = theMuonEcalEffects->energyLossSimulator();
@@ -1132,25 +1280,132 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
       
       // in the ECAL, there are two types of segments: PbWO4 and GAP
       float segmentSizeinX0=segments[iseg].X0length();
-
+      
       // Martijn - insert your computations here
       float energy=0.0;
       if (segmentSizeinX0>0.001 && segments[iseg].material()==CaloSegment::PbWO4 ) {
-	// The energy loss simulator
-	float charge = (float)(myTrack.charge());
-	ParticlePropagator theMuon(moment,trackPosition,charge,0);
-	theMuon.setID(-(int)charge*13);
+     
+//Information of particle in segments
+     Ecal_entrance_segment = GlobalPoint(segments[iseg].entrance().x(),
+                                   segments[iseg].entrance().y(),
+                                   segments[iseg].entrance().z());
+     
+     Ecal_exit_segment = GlobalPoint(segments[iseg].exit().x(),
+                                   segments[iseg].exit().y(),
+                                   segments[iseg].exit().z());
 
+    
+      LogDebug("FastCalorimetry")<< "position_segment_entrance: "<< segments[iseg].entrance()<< std::endl;   
+      LogDebug("FastCalorimetry")<< "position_segment_exit: "<< segments[iseg].exit()<< std::endl;
+
+//    std::cout<< "length (in cm): "<< length << std::endl;
+ //   std::cout<< "segmentSizeinX0: "<< segmentSizeinX0 << std::endl;
+ //   std::cout<< "RadPath on SHP: "<< shsDest.radPath() << std::endl;
+//    std::cout<< "Path on SHP: "<< shsDest.path() << std::endl;
+
+//Initialization of Stepping Helix State info using the information of segments
+
+ const SteppingHelixStateInfo& shsDest = ((const SteppingHelixPropagator*)ptr_)->propagate(shsStart,Ecal_entrance_segment,Ecal_exit_segment);
+
+               LogDebug("FastCalorimetry")<<"Global Position calculates using SHP in ECAL: "<<  shsDest.position()<< std::endl;
+               LogDebug("FastCalorimetry")<<"Global Momentum calculates using SHP in ECAL: "<<  shsDest.momentum()<< std::endl;
+
+	     //   std::cout <<"Global Position calculates using SHP in ECAL: "<<  shsDest.position()<< std::endl;
+// 	       std::cout <<"Global Momentum calculates using SHP in ECAL: "<<  shsDest.momentum()<< std::endl;
+
+//Initialization the momentum, position charge and energy on SHS
+
+       GlobalPoint gPos(shsDest.position().x(),shsDest.position().y(),shsDest.position().z());
+       GlobalVector gMom(shsDest.momentum().x(),shsDest.momentum().y(),shsDest.momentum().z());
+//Muon Mass
+       double mu = 0.1056583692;
+//initial muon energy
+       double ini_en = std::sqrt(startingMomentum.mag2()+mu*mu);
+
+//Muon Energy
+       double en = std::sqrt(gMom.mag2()+mu*mu);
+
+//delta energy due SHP (Contribution of the flutuation of muon energy )
+       double delta_energy = en - ini_en;
+       LogDebug("FastCalorimetry")<<"Flutuation of muon energy due SHP (delta_energy):  "<<  fabs(delta_energy) << std::endl;
+       //  std::cout <<"Flutuation of muon energy due SHP om ECAL (delta_energy):  "<<  fabs(delta_energy) << std::endl;
+
+
+       XYZTLorentzVector trackPosition_shsDest(gPos.x(),gPos.y(),gPos.z(),0.);
+       XYZTLorentzVector moment_shsDest(gMom.x(),gMom.y(),gMom.z(),en);
+       float charge = (float)(shsDest.charge());
+ // The energy loss simulator
+	ParticlePropagator theMuon(moment_shsDest,trackPosition_shsDest,charge,0);
+        theMuon.setID(-(int)charge*13);
 	if ( energyLossECAL ) { 
-	  energyLossECAL->updateState(theMuon, segmentSizeinX0);
-	  energy = energyLossECAL->deltaMom().E();
+          energyLossECAL->updateState(theMuon, segmentSizeinX0);
+//include of correction enrgy due effect of Mag Field´on Muon Trajectory
+	  energy = (energyLossECAL->deltaMom().E() + fabs(delta_energy));
 	  moment -= energyLossECAL->deltaMom();
-         //Implementation of Muon Brem in ECAL (only applied if also energyLossECAL is switched on)
+        //std::cout<< "Energy loss on ECAL: "<< energyLossECAL->deltaMom().E()<< std::endl;
+
+	 //Implementation of Muon Brem in ECAL (only applied if also energyLossECAL is switched on)
         if (muonBremECAL){
             muonBremECAL->updateState(theMuon, segmentSizeinX0);
             energy += muonBremECAL->deltaP_BremPhoton().E();
             moment -=  muonBremECAL->deltaP_BremMuon();
-  //         if(muonBremECAL->deltaP_BremPhoton().E()>0.) std::cout<< "Muon Brem on ECAL: "<< energy<< std::endl;
+	    
+          XYZTLorentzVector thePhoton4Momentum(muonBremECAL->deltaP_BremPhoton().Px(),
+                                               muonBremECAL->deltaP_BremPhoton().Py(),
+                                               muonBremECAL ->deltaP_BremPhoton().Pz(),
+                                               muonBremECAL->deltaP_BremPhoton().E());
+     
+	  if(muonBremECAL->deltaP_BremPhoton().E()>0.){
+
+         // Add a photon
+          RawParticle thePhoton(22,thePhoton4Momentum);
+	  thePhoton.setID(22);
+         //Using new position of muon with brem photon vertex (check it) 
+	
+          XYZTLorentzVector vertex (myTrack.vertex().position().x(),
+			      myTrack.vertex().position().y(),
+			      myTrack.vertex().position().z(),
+			      myTrack.vertex().position().t());
+
+
+
+          thePhoton.setVertex(vertex);
+
+	  //  std ::cout <<" Muon Brem Photon vertex: " << thePhoton.vertex() <<std::endl;
+
+         _theUpdatedState.push_back(thePhoton);
+        
+	
+         //Creating Hits of the photon 
+         int ivertex = mySimEvent->addSimVertex(vertex,-1,FSimVertexType::BREM_VERTEX);
+         mySimEvent->addSimTrack(&thePhoton,ivertex);
+
+         int fsimi = ((int) mySimEvent->nTracks()-1);
+         FSimTrack& myTrack = mySimEvent->track(fsimi);
+	 myTrack.setEcal(thePhoton,onECAL);
+
+    ///////////////////////////////////////////////////////
+	 // Photons : create an e+e- pair
+	 if( myTrack.noEndVertex() ) {
+
+	   // Simulate energy smearing for photon and electrons
+	   if (abs( myTrack.type()) == 11 ||  myTrack.type() == 22 ) {
+	     LogDebug("FastCalorimetry") << "Using EMShower by muons on ECAL:" <<std::endl;  
+	     if ( myTrack.onEcal()) 
+	       EMShowerSimulation(myTrack);
+	     else if ( myTrack.onVFcal())
+	      LogDebug("FastCalorimetry") <<  "Using EMShower by muons on VFCAL" << std::endl;  
+	     reconstructHCAL(myTrack);
+ 
+	   }
+	 }
+
+  ///////////////////////////////////////////////////////////////////
+
+
+	
+///////////
+    if(muonBremECAL->deltaP_BremPhoton().E()>0.){ LogDebug("FastCalorimetry") << "Muon Brem energy on ECAL: "<< energy << std::endl; }//mySimEvent->print(); thePhoton.print();}
            if( debug_ ) {
               float muon_mip =  energyLossECAL->deltaMom().E();
               float muon_brem_ecal = muonBremECAL->deltaP_BremPhoton().E();
@@ -1164,24 +1419,28 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
             }
 
             }
-           }
+	}
+ 
+
+}
           else{
             LogDebug("FastCalorimetry")<<"Using only MIP for MUON"<<std::endl;
             LogDebug("FastCalorimetry")<< "Muon moment using ONLY the contribution of MIP "<<   moment <<"moment:"<< energyLossECAL->deltaMom() << std::endl;
           }
-    
 
-     
+
+
 
 
   }
-      // that's all for ECAL, Florian
+
+  // that's all for ECAL, Florian
       // Save the hit only if it is a crystal
       if(segments[iseg].material()==CaloSegment::PbWO4)
 	{
 	  myGrid.getPads(segments[iseg].sX0Entrance()+segmentSizeinX0*0.5);
 	  myGrid.setSpotEnergy(energy);
-	  myGrid.addHit(0.,0.);
+          myGrid.addHit(0.,0.);
 	  ilastEcal=iseg;
 	}
       // Check for end of loop:
@@ -1190,8 +1449,7 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 	  ifirstHcal=iseg;
 	}
     }
-
-
+  
   // Position of Ecal Exit
   math::XYZVector ecalExit;
   if(ilastEcal>=0)
@@ -1217,35 +1475,154 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
   // myHcalHitMaker.addHit(hcalEntrance);
   ///
   /////
-  ////// TEMPORARY First attempt to include HCAL (with straight-line extrapolation): 
+
+
+  ////// TEMPORARY First attempt to include HCAL 
+  int onHCAL = myTrack.onHcal();
   int ilastHcal=-1;
   float mipenergy=0.0;
+  GlobalPoint HCAL_entrance_segment;
+  GlobalPoint HCAL_exit_segment;
+
   EnergyLossSimulator* energyLossHCAL = 0;
-  // Implementation of Muon Brem Effect in HCAL (Sandro Fonseca de Souza and Andre Sznajder UERJ/Brazil)
-  //Date 01/16/2011
+  // Implementation of Muon Brem Effect in HCAL 
+  //Sandro Fonseca de Souza (UERJ/Brazil) and Dilson de Jesus Damiao (CBPF/Brazil)
+  //Date 12/10/2011
   MuonBremsstrahlungSimulator* muonBremHCAL = 0;
  
   if (theMuonHcalEffects) energyLossHCAL = theMuonHcalEffects->energyLossSimulator();
   // Muon Brem effect
   if (theMuonHcalEffects) muonBremHCAL = theMuonHcalEffects->muonBremsstrahlungSimulator(); 
- 
+
   if(ifirstHcal>0 && energyLossHCAL){
     for(unsigned iseg=ifirstHcal;iseg<nsegments;++iseg)
       {
 	float segmentSizeinX0=segments[iseg].X0length();
 	if (segmentSizeinX0>0.001 && segments[iseg].material()==CaloSegment::HCAL ) {
-	  // The energy loss simulator
-	  float charge = (float)(myTrack.charge());
-	  ParticlePropagator theMuon(moment,trackPosition,charge,0);
-	  theMuon.setID(-(int)charge*13);
-	  energyLossHCAL->updateState(theMuon, segmentSizeinX0);
-	  mipenergy = energyLossHCAL->deltaMom().E();
-	  moment -= energyLossHCAL->deltaMom();
-   //Implementation of Muon Brem in HCAL (only applied if also energyLossHCAL is switched on)
-	  if (muonBremHCAL){
-	    muonBremHCAL->updateState(theMuon, segmentSizeinX0);
-	    mipenergy += muonBremHCAL->deltaP_BremPhoton().E();
-	    moment -=  muonBremHCAL->deltaP_BremMuon();
+
+
+//Information of particle in segments
+     HCAL_entrance_segment = GlobalPoint(segments[iseg].entrance().x(),
+                                   segments[iseg].entrance().y(),
+                                   segments[iseg].entrance().z());
+     
+     HCAL_exit_segment = GlobalPoint(segments[iseg].exit().x(),
+                                   segments[iseg].exit().y(),
+                                   segments[iseg].exit().z());
+
+     //  LogDebug("FastCalorimetry")<< "Propagating on HCAL " << propagatedState  << std::endl;
+   LogDebug("FastCalorimetry")<< "position_segment_entrance on HCAL: "<< segments[iseg].entrance()<< std::endl;   
+   LogDebug("FastCalorimetry")<< "position_segment_exit on HCAL: "<< segments[iseg].exit()<< std::endl;
+
+
+//Initialization of Stepping Helix State info using the information of segments(HCAL)
+
+ const SteppingHelixStateInfo& shsDest = ((const SteppingHelixPropagator*)ptr_)->propagate(shsStart,HCAL_entrance_segment,HCAL_exit_segment);
+
+ LogDebug("FastCalorimetry")<<"Global Position calculates using SHP on HCAL: "<<  shsDest.position()<< std::endl;
+ LogDebug("FastCalorimetry")<<"Global Momentum calculates using SHP on HCAL: "<<  shsDest.momentum()<< std::endl;
+
+
+//Initialization the momentum, position charge and energy on SHS
+
+  GlobalPoint gPos(shsDest.position().x(),shsDest.position().y(),shsDest.position().z());
+  GlobalVector gMom(shsDest.momentum().x(),shsDest.momentum().y(),shsDest.momentum().z());
+//Muon Mass
+       double mu = 0.1056583692;
+//initial muon energy
+       double ini_en = std::sqrt(startingMomentum.mag2()+mu*mu);
+       // std::cout <<" ini_en_hcal:  "<< ini_en_hcal << std::endl;
+//Muon Energy
+       double en = std::sqrt(gMom.mag2()+mu*mu);
+       //   std::cout <<" en_hcal:  "<< en_hcal << std::endl;
+
+//delta energy due SHP (Contribution of the flutuation of muon energy )
+       double delta_energy = en - ini_en;
+      LogDebug("FastCalorimetry")<<"Flutuation of muon energy due SHP (delta_energy):  "<<  fabs(delta_energy) << std::endl;
+     
+      // std::cout <<"Flutuation of muon energy due SHP om HCAL (delta_energy):  "<<  fabs(delta_energy) << std::endl;
+     
+      XYZTLorentzVector trackPosition_shsDest(gPos.x(),gPos.y(),gPos.z(),0.);
+      XYZTLorentzVector moment_shsDest(gMom.x(),gMom.y(),gMom.z(),en);
+      float charge = (float)(shsDest.charge());
+
+      // The energy loss simulator
+      // float charge = (float)(myTrack.charge());
+      // ParticlePropagator theMuon(moment,trackPosition,charge,0);
+
+      ParticlePropagator theMuon(moment_shsDest,trackPosition_shsDest,charge,0);
+
+      theMuon.setID(-(int)charge*13);
+      energyLossHCAL->updateState(theMuon, segmentSizeinX0);
+
+      //include of the correction enrgy due effect of Mag Field´on Muon Trajectory on HCAL
+
+      // mipenergy = energyLossHCAL->deltaMom().E();
+      mipenergy = (energyLossHCAL->deltaMom().E() + fabs(delta_energy));
+      moment -= energyLossHCAL->deltaMom();
+      // std::cout<< "Energy loss ONLY on HCAL: "<< energyLossHCAL->deltaMom().E()<< std::endl;	
+      //Implementation of Muon Brem in HCAL (only applied if also energyLossHCAL is switched on)
+      if (muonBremHCAL){
+	muonBremHCAL->updateState(theMuon, segmentSizeinX0);
+	mipenergy += muonBremHCAL->deltaP_BremPhoton().E();
+	moment -=  muonBremHCAL->deltaP_BremMuon();
+
+
+	//Testing
+	XYZTLorentzVector thePhoton4Momentum(muonBremHCAL->deltaP_BremPhoton().Px(),
+					     muonBremHCAL->deltaP_BremPhoton().Py(),
+					     muonBremHCAL ->deltaP_BremPhoton().Pz(),
+					     muonBremHCAL->deltaP_BremPhoton().E());
+    
+
+
+	if(muonBremHCAL->deltaP_BremPhoton().E()>0.){
+
+          // Add a photon
+          RawParticle thePhoton(22,thePhoton4Momentum);
+	  //  thePhoton.setT(0.1);
+          thePhoton.setID(22);
+	  //Using new position of muon with brem photon vertex (check it) 
+	
+          XYZTLorentzVector vertex (myTrack.vertex().position().x(),
+				    myTrack.vertex().position().y(),
+				    myTrack.vertex().position().z(),
+				    myTrack.vertex().position().t());
+
+
+
+          thePhoton.setVertex(vertex);
+
+	  _theUpdatedState.push_back(thePhoton);
+        
+
+
+      //Creating Hits of the photon 
+         int ivertex = mySimEvent->addSimVertex(vertex,-1,FSimVertexType::BREM_VERTEX);
+         mySimEvent->addSimTrack(&thePhoton,ivertex);
+
+         int fsimi = ((int) mySimEvent->nTracks()-1);
+         FSimTrack& myTrack = mySimEvent->track(fsimi);
+         myTrack.setHcal(thePhoton,onHCAL);
+
+    ///////////////////////////////////////////////////////
+         // Photons : create an e+e- pair
+         if( myTrack.noEndVertex() ) {
+
+           // Simulate energy smearing for photon and electrons
+           if (abs( myTrack.type()) == 11 ||  myTrack.type() == 22 ) {
+             LogDebug("FastCalorimetry") << "Using EMShower by muons on HCAL:" <<std::endl;
+             if ( myTrack.onHcal())
+               EMShowerSimulation(myTrack);
+       //      else if ( myTrack.onVFcal())
+       //       LogDebug("FastCalorimetry") <<  "Using EMShower by muons on VFCAL" << std::endl;
+       //      reconstructHCAL(myTrack);
+
+           }
+         }
+
+
+
 	    if( debug_ ) {
 	      float muon_mip =  energyLossHCAL->deltaMom().E();
 	      float muon_brem = muonBremHCAL->deltaP_BremPhoton().E();
@@ -1260,6 +1637,7 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 	      }
 	    }
 
+        }
 	  }
           else{
 	    LogDebug("FastCalorimetry")<<"Using only MIP for MUON"<<std::endl;
@@ -1270,7 +1648,7 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 	  myHcalHitMaker.addHit(segments[iseg].entrance());
 	}
 
-
+ 
 
 	if(segments[iseg].material()==CaloSegment::HCAL)
 	  {
@@ -1278,11 +1656,7 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 	  }
       }
   }
-
-
-
-
-  if(ilastHcal>=0) // Update hcalExit position from 'dummy' HCAL entrance to 'staight line' HCAL exit
+  if(ilastHcal>=0) // Update hcalExit position from 'dummy' HCAL entrance to 'straight line' HCAL exit
     hcalExit=segments[ilastHcal].exit();
 
   //////
@@ -1295,7 +1669,7 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 
   // Copy the muon SimTrack (for Energy loss and Muon Brem)
   FSimTrack muonTrack(myTrack);
-  if(energyLossHCAL || muonBremHCAL) {
+  if(energyLossHCAL || muonBremHCAL ) {
     muonTrack.setTkPosition(hcalExit);
     muonTrack.setTkMomentum(moment);
   } else if(energyLossECAL || muonBremECAL ) {
@@ -1326,6 +1700,12 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
       if(debug_)
 	LogDebug("FastCalorimetry") << " ECAL cell " << mapitr->first << " added,  E = " 
 				    << energy << std::endl;  
+
+//if (energy>0.) std::cout<< " ECAL cell " << mapitr->first << " added,  E = "
+//                                    << energy << std::endl;
+
+
+
     }
   }
       
@@ -1337,10 +1717,15 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
       updateMap(HcalDetId(mapitr->first).hashed_index(),energy,myTrack.id(),HMapping_,firedCellsHCAL_);
     }
     if(debug_)
-      LogDebug("FastCalorimetry") << " HCAL cell "  
-				  << mapitr->first << " added    E = " 
-				  << mapitr->second << std::endl;  
-  }
+      LogDebug("FastCalorimetry") << " HCAL cell "
+				  << mapitr->first << " added    E = "
+				  << mapitr->second << std::endl;
+
+
+ //if (energy>0.)std::cout << " HCAL cell "<< mapitr->first << " added    E = "<< mapitr->second << std::endl;
+
+
+ }
   
   if(debug_)
     LogDebug("FastCalorimetry") << std::endl << " FASTEnergyReconstructor::MipShowerSimulation  finished "
@@ -1364,14 +1749,8 @@ void CalorimetryManager::readParameters(const edm::ParameterSet& fastCalo) {
   
   RCFactor_ = ECALparameters.getParameter<double>("RCFactor");
   RTFactor_ = ECALparameters.getParameter<double>("RTFactor");
-  //changed after tuning - Feb-July - Shilpi Jain
-  //  radiusFactor_ = ECALparameters.getParameter<double>("RadiusFactor");
-  radiusFactorEE_ = ECALparameters.getParameter<double>("RadiusFactorEE");
-  radiusFactorEB_ = ECALparameters.getParameter<double>("RadiusFactorEB");
-  //(end of) changed after tuning - Feb-July - Shilpi Jain
+  radiusFactor_ = ECALparameters.getParameter<double>("RadiusFactor");
   radiusPreshowerCorrections_ = ECALparameters.getParameter<std::vector<double> >("RadiusPreshowerCorrections");
-  aTerm = 1.+radiusPreshowerCorrections_[1]*radiusPreshowerCorrections_[0];
-  bTerm = radiusPreshowerCorrections_[0];
   mipValues_ = ECALparameters.getParameter<std::vector<double> >("MipsinGeV");
   simulatePreshower_ = ECALparameters.getParameter<bool>("SimulatePreshower");
 
@@ -1402,10 +1781,7 @@ void CalorimetryManager::readParameters(const edm::ParameterSet& fastCalo) {
 	{
 	  LogInfo("FastCalorimetry") << " r < " << theTailIntervals_[ir*2] << " R_M : " << theTailIntervals_[ir*2+1] << "        ";
 	}
-  //changed after tuning - Feb-July - Shilpi Jain
-      //      LogInfo("FastCalorimetry") << "Radius correction factor " << radiusFactor_ << std::endl;
-      LogInfo("FastCalorimetry") << "Radius correction factors:  EB & EE " << radiusFactorEB_ << " : "<< radiusFactorEE_ << std::endl;
-  //(end of) changed after tuning - Feb-July - Shilpi Jain
+      LogInfo("FastCalotimetry") << "Radius correction factor " << radiusFactor_ << std::endl;
       LogInfo("FastCalorimetry") << std::endl;
       if(mipValues_.size()>2) 	{
 	LogInfo("FastCalorimetry") << "Improper number of parameters for the preshower ; using 95keV" << std::endl;
