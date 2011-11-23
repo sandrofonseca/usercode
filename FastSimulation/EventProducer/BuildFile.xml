@@ -1,3 +1,6 @@
+<use   name="RecoMuon/TrackingTools"/>
+
+
 <use   name="DataFormats/BeamSpot"/>
 <use   name="DataFormats/HepMCCandidate"/>
 <use   name="DataFormats/Common"/>
@@ -24,4 +27,8 @@
 <use   name="SimDataFormats/GeneratorProducts"/>
 <use   name="FastSimDataFormats/NuclearInteractions"/>
 <use   name="SimGeneral/HepPDTRecord"/>
+<use   name="hepmc"/>
 <flags   EDM_PLUGIN="1"/>
+<export>
+  <lib   name="1"/>
+</export>

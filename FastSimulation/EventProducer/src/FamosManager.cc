@@ -10,8 +10,16 @@
 #include "DataFormats/Provenance/interface/EventID.h"
 
 #include "SimGeneral/HepPDTRecord/interface/ParticleDataTable.h"
+//////////////////////////////////////////////////////////////////////
+//include initialization of propagator likes MuonSimHitsProducer
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+////////////////////////////////////////////////////////////////////
 
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
 
 //#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 //#include "RecoTracker/TkDetLayers/interface/GeometricSearchTracker.h"
@@ -42,6 +50,8 @@
 #include <memory>
 #include <vector>
 
+//#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+
 using namespace HepMC;
 
 FamosManager::FamosManager(edm::ParameterSet const & p)
@@ -67,6 +77,12 @@ FamosManager::FamosManager(edm::ParameterSet const & p)
   }
 
   random = new RandomEngine(&(*rng));
+  //////////////////////////////////////////
+//Initialize the Muon Service Proxy
+ edm::ParameterSet serviceParameters =
+     p.getParameter<edm::ParameterSet>("ServiceParameters");
+     theService = new MuonServiceProxy(serviceParameters);
+//////////////////////////////////////////////////
 
   // Initialize the FSimEvent
   mySimEvent = 
@@ -103,6 +119,8 @@ FamosManager::~FamosManager()
   if ( myTrajectoryManager ) delete myTrajectoryManager; 
   if ( myPileUpSimulator ) delete myPileUpSimulator;
   if ( myCalorimetry) delete myCalorimetry;
+  if (theService) delete theService;
+
   delete random;
 }
 
@@ -154,6 +172,9 @@ FamosManager::setupGeometryAndField(edm::Run & run, const edm::EventSetup & es)
     
   //  Initialize the calorimeter geometry
   if ( myCalorimetry ) {
+
+    std::cout << "B-field(T) at (0,0,0)(cm): " << bField000 << std::endl;   
+  
     edm::ESHandle<CaloGeometry> pG;
     es.get<CaloGeometryRecord>().get(pG);   
     myCalorimetry->getCalorimeter()->setupGeometry(*pG);
@@ -162,6 +183,22 @@ FamosManager::setupGeometryAndField(edm::Run & run, const edm::EventSetup & es)
     es.get<CaloTopologyRecord>().get(theCaloTopology);     
     myCalorimetry->getCalorimeter()->setupTopology(*theCaloTopology);
     myCalorimetry->getCalorimeter()->initialize(bField000);
+
+///////////////////////////////////////////////////////////
+    //Transmitting of Magnetic Field and Propagate for Calorimetry Manager
+    edm::ESHandle<MagneticField> theMagneticField;
+    es.get<IdealMagneticFieldRecord>().get(theMagneticField);
+    //GlobalVector magfld = theMagField->inInverseGeV(glbpt);
+    myCalorimetry->SetMagneticField(&(*theMagneticField));
+// Setting Propagator
+    edm::ESHandle<Propagator>  propagator;
+    theService->update(es);
+    myCalorimetry->SetPropagator(&(*(theService->propagator("SteppingHelixPropagatorAny"))));
+
+  //  edm::ESHandle<Propagator> propagator;
+    //es.get<TrackingComponentsRecord>().get("SteppingHelixPropagatorAny", propagator);
+    //myCalorimetry.SetPropagator(propagator.product());
+
   }
 
   m_pRunNumber = run.run();
