@@ -57,6 +57,7 @@ class MuonBremsstrahlungSimulator : public MaterialEffectsSimulator
   /// The minimum photon energy to be radiated, in GeV
   double photonEnergy;
   double bremProba;
+
   /// The fractional photon energy cut (determined from the above two)
   double xmin,xmax,rand;
   double d; //distance

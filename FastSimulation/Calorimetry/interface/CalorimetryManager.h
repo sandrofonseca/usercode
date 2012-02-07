@@ -15,6 +15,7 @@
 #include <map>
 #include <algorithm>
 
+
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
 
 #include "MagneticField/Engine/interface/MagneticField.h"
@@ -25,6 +26,8 @@
 
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/GeometryVector/interface/GlobalVector.h"
+
+
 
 class FSimEvent;
 class FSimTrack;
@@ -42,19 +45,18 @@ class GflashPiKShowerProfile;
 class GflashProtonShowerProfile;
 class GflashAntiProtonShowerProfile;
 
-//class MuonServiceProxy;
+class DQMStore;
+
+//SHP and Magnetic Field
 class MagneticField;
 class MaterialEffects;
 class TrajectoryStateOnSurface;
 class Propagator;
-//class TrackingComponentsRecord.h;
+
 
 namespace edm { 
   class ParameterSet;
-  class EventSetup;
-  class Event;
 }
-
 
 class CalorimetryManager{
 
@@ -67,8 +69,6 @@ class CalorimetryManager{
                      const edm::ParameterSet& fastGflash,
 		     const RandomEngine* engine);
   ~CalorimetryManager();
-
-
 
   // Does the real job
   void reconstruct();
@@ -94,8 +94,7 @@ class CalorimetryManager{
 
 
  private:
-
-// Simulation of electromagnetic showers in PS, ECAL, HCAL
+  // Simulation of electromagnetic showers in PS, ECAL, HCAL
   void EMShowerSimulation(const FSimTrack& myTrack);
   
   // Simulation of electromagnetic showers in VFCAL
@@ -118,7 +117,6 @@ class CalorimetryManager{
   void respCorr(double);
 
   void clean(); 
-  //void propagate(SteppingHelixStateInfo& state, const Plane& plane);
 
  private:
 
@@ -126,11 +124,11 @@ class CalorimetryManager{
   CaloGeometryHelper* myCalorimeter_;
 
   Histos * myHistos;
+  DQMStore * dbe;
+
 
   HCALResponse* myHDResponse_;
   HSParameters * myHSParameters_;
-
- 
 
   // In the not unfolded case (standard) the most inner vector will be of size = 1 
   // the preshower does not have hashed_indices, hence the map 
@@ -147,7 +145,10 @@ class CalorimetryManager{
   // should make a es_producer of CaloGeometryTools 
   std::vector<DetId> theDetIds_;
   bool debug_;
+  bool useDQM_;
   std::vector<unsigned int> evtsToDebug_;
+
+
 
   bool unfoldedMode_;
 
@@ -160,8 +161,10 @@ class CalorimetryManager{
   double pulledPadSurvivalProbability_;
   double crackPadSurvivalProbability_;
   double spotFraction_;
-  double radiusFactor_;
+  //  double radiusFactor_;
+  double radiusFactorEB_ , radiusFactorEE_;
   std::vector<double> radiusPreshowerCorrections_;
+  double aTerm, bTerm;
   std::vector<double> mipValues_;
   int gridSize_;
   std::vector<double> theCoreIntervals_,theTailIntervals_;
@@ -177,7 +180,6 @@ class CalorimetryManager{
   GammaFunctionGenerator* aGammaGenerator;
 
   static std::vector<std::pair<int, float> > myZero_;
-  bool initialized_;
 
   // RespCorrP p, k_e(p), k_h(p) vectors  and evaluated for each p
   // ecorr and hcorr  
@@ -188,28 +190,33 @@ class CalorimetryManager{
   double ecorr;
   double hcorr;
 
+  // Used to check if the calorimeters was initialized
+  bool initialized_;
+
   std::vector<FSimTrack> muonSimTracks;
   MaterialEffects* theMuonEcalEffects; // material effects for muons in ECAL
   MaterialEffects* theMuonHcalEffects; // material effects for muons in HCAL
+
+
+  // If set to true the simulation in ECAL would be done 1X0 by 1X0
+  // this is slow but more adapted to detailed studies.
+  // Otherwise roughty 5 steps are used.
+  // This variable is transferred to EMShower
+  bool bFixedLength_;
 
   //Gflash
   GflashHadronShowerProfile *theProfile;
   GflashPiKShowerProfile *thePiKProfile;
   GflashProtonShowerProfile *theProtonProfile;
   GflashAntiProtonShowerProfile *theAntiProtonProfile;
-  
+ //
   const MagneticField*  magField_;
   const Propagator* ptr_;
   
    //create photon
      RawParticle thePhoton;
 
-   /*   GlobalPoint startingPosition; */
-/*      GlobalVector startingMomentum; */
-    
-
-      protected: 
+  protected: 
   std::vector<RawParticle> _theUpdatedState;
-
 };
 #endif

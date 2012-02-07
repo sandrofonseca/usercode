@@ -16,9 +16,9 @@
 //         Created:  Wed Jul 30 11:37:24 CET 2007
 //         Working:  Fri Nov  9 09:39:33 CST 2007
 //
-// $Id: MuonSimHitProducer.cc,v 1.35 2011/03/01 16:52:12 aperrott Exp $
+// $Id: MuonSimHitProducer.cc,v 1.36 2011/10/07 08:25:42 aperrott Exp $
 //
-//Included Muon Brem improvements (01 June 2011 by: Sandro Fonseca, Dilson de Jesus Damiao and Andre Sznajder)   
+//
 
 // CMSSW headers 
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -376,7 +376,7 @@ MuonSimHitProducer::produce(edm::Event& iEvent,const edm::EventSetup& iSetup) {
 	    if ( ! det->surface().bounds().inside(lpos) ) continue;
 	    const DTTopology& dtTopo = layer[ilayer]->specificTopology();
             int wire = dtTopo.channel(lpos);
-	    if (wire < dtTopo.firstChannel() || wire > dtTopo.lastChannel()) continue;
+	    if (wire - dtTopo.firstChannel() < 0 || wire - dtTopo.lastChannel() > 0 ) continue;
 	    // no drift cell here (on the chamber edge or just outside)
             // this hit would otherwise be discarded downstream in the digitizer
 
@@ -634,7 +634,8 @@ MuonSimHitProducer::applyMaterialEffects(TrajectoryStateOnSurface& tsosWithdEdx,
     // (Material description is more accurate in the stepping helix propagator)
     radPath *= -deltaMom.E()/energyLoss->mostLikelyLoss();
     double fac = energyLoss->deltaMom().E()/energyLoss->mostLikelyLoss();
-    XYZTLorentzVector theNewMomentum ;
+
+   XYZTLorentzVector theNewMomentum ;
 
  // Muon Brem Contribution (Sandro Fonseca (UERJ/Brazil)) June 2nd 2011
     // Particle momentum & position after (energy loss + fluctuation) + Muon brem 
@@ -654,35 +655,25 @@ theNewMomentum = theMuon.momentum() + energyLoss->deltaMom() + fac * deltaMom;
     fac  = (theNewMomentum.E()*theNewMomentum.E()-mu*mu)/theNewMomentum.Vect().Mag2();
     fac  = fac>0.? std::sqrt(fac) : 1E-9;
     theMuon.SetXYZT(theNewMomentum.Px()*fac,theNewMomentum.Py()*fac,
-                    theNewMomentum.Pz()*fac,theNewMomentum.E());
+                    theNewMomentum.Pz()*fac,theNewMomentum.E());    
     theMuon.setVertex(theNewPosition);
-
 
 //create the brem photon on muon system
  if(bremsstrahlung && bremsstrahlung->deltaP_BremPhoton().E()>0.)
-{ 
-
-XYZTLorentzVector thePhoton4Momentum(bremsstrahlung->deltaP_BremPhoton().Px(),
+	{	 
+	XYZTLorentzVector thePhoton4Momentum(bremsstrahlung->deltaP_BremPhoton().Px(),
                                      bremsstrahlung->deltaP_BremPhoton().Py(),
                                      bremsstrahlung->deltaP_BremPhoton().Pz(),
                                      bremsstrahlung->deltaP_BremPhoton().E());
+	// Add a photon
+	 RawParticle thePhoton(22,thePhoton4Momentum);
+	//Using new position of muon with brem photon vertex  
+	 thePhoton.setVertex(theNewPosition);
+	 _theUpdatedState.push_back(thePhoton);
 
-
-// Add a photon
- RawParticle thePhoton(22,thePhoton4Momentum);
-//Using new position of muon with brem photon vertex  
- thePhoton.setVertex(theNewPosition);
- _theUpdatedState.push_back(thePhoton);
-
-//   std::cout<< "Photon 4 Momentum: "<< thePhoton4Momentum << "photon vertex: "<< theNewPosition << std::endl;
- 
-
-}
-
+	//   std::cout<< "Photon 4 Momentum: "<< thePhoton4Momentum << "photon vertex: "<< theNewPosition << std::endl;
+	}
   }
-
-
-
 
   // Does the actual mutliple scattering
   if ( multipleScattering ) {

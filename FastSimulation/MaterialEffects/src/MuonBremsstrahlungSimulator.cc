@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////
 //MuonBremsstrahlungSimulator
 // Description: Implementation of Muon bremsstrahlung using the Petrukhin model
-//Authors :Sandro Fonseca de Souza Dilson de Jesus Damiao and Andre Sznajder (UERJ/Brazil)
-// Date: 01-June-2011
+//Authors :Sandro Fonseca de Souza and Andre Sznajder (UERJ/Brazil)
+// Date: 23-Nov-2010
 //////////////////////////////////////////////////////////
 #include "FastSimulation/MaterialEffects/interface/MuonBremsstrahlungSimulator.h"
 #include "FastSimulation/Utilities/interface/RandomEngine.h"
@@ -20,12 +20,13 @@
 
 //////////////////////////////////////////////////////////////////////////////////////
 MuonBremsstrahlungSimulator::MuonBremsstrahlungSimulator(const RandomEngine* engine,
-							 double A,double Z, double density,double radLen,
-							 double photonEnergyCut) : 
+					 double A,double Z, double density,double radLen,
+					 double photonEnergyCut) : 
   MaterialEffectsSimulator(engine,A,Z,density,radLen) 
 {
   // Set the minimal photon energy for a Brem from mu+/-
   photonEnergy = photonEnergyCut;
+//  photonFractE = photonFractECut;
   d = 0.; //distance
   LogDebug("MuonBremsstrahlungSimulator")<< "Starting the MuonBremsstrahlungSimulator"<< std::endl;
 }
@@ -38,16 +39,19 @@ MuonBremsstrahlungSimulator::compute(ParticlePropagator &Particle)
 {
 
   double NA = 6.022e+23;  //Avogadro's number
-  deltaPMuon.SetXYZT(0.,0.,0.,0.);
-  brem_photon.SetXYZT(0.,0.,0.,0.);
- 
+
+//  if ( radLengths > 4. )  {
+//    Particle.SetXYZT(0.,0.,0.,0.);
+    deltaPMuon.SetXYZT(0.,0.,0.,0.);
+    brem_photon.SetXYZT(0.,0.,0.,0.);
+//  }
 
 // Hard brem probability with a photon Energy above photonEnergy.
   
   double EMuon = Particle.e();//Muon Energy
   if (EMuon<photonEnergy) return;
-  xmin = photonEnergy/EMuon;//fraction of muon's energy transferred to the photon
-
+    xmin = photonEnergy/EMuon; //fraction of muon's energy transferred to the photon
+    //xmin = std::max(photonEnergy/EMuon,photonFractE);//fraction of muon's energy transferred to the photon
 
  //  xmax = photonEnergy/Particle.e();
   if ( xmin >=1. || xmin <=0. ) return;
@@ -143,7 +147,7 @@ MuonBremsstrahlungSimulator::brem(ParticlePropagator& pp) const {
     
     edm::LogInfo ("MuonBremsstrahlungSimulator") << "Exception when fitting..."; 
   }
-    LogDebug("MuonBremsstrahlungSimulator")<<  "MuonBremsstrahlungSimulator: xp->" << xp << std::endl;
+  LogDebug("MuonBremsstrahlungSimulator")<<  "MuonBremsstrahlungSimulator: xp->" << xp << std::endl;
 
   
   // Have photon energy. Now generate angles with respect to the z axis 

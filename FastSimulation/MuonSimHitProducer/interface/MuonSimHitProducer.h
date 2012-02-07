@@ -17,7 +17,7 @@
 // Created:  Wed July 11 12:37:24 CET 2007
 // $Id: MuonSimHitProducer.h,v 1.10 2010/05/13 15:23:21 aperrott Exp $
 //
-//Included Brem Photon (Sandro F. de Souza)
+
 
 // system include files
 #include <memory>
@@ -39,7 +39,6 @@ class MaterialEffects;
 class TrajectoryStateOnSurface;
 class Propagator;
 class RawParticle;
-
 
 /*
 namespace reco { 
@@ -99,16 +98,14 @@ class MuonSimHitProducer : public edm::EDProducer {
      //create photon
      RawParticle thePhoton;
 
-        
+          
   // ----------- parameters ---------------------------- 
       bool fullPattern_;
       bool doL1_ , doL3_ , doGL_;
       std::string theSimModuleLabel_ , theSimModuleProcess_, theTrkModuleLabel_ ;
 
- protected: 
- std::vector<RawParticle> _theUpdatedState;
-
-
+      protected: 
+      std::vector<RawParticle> _theUpdatedState;
 
 
 };

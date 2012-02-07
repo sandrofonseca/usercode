@@ -22,6 +22,9 @@ class MagneticField;
 class CalorimetryManager;
 class RandomEngine;
 
+class Propagator;
+class MuonServiceProxy;
+
 // using trailing _ for private data members, m_p prefix for PSet variables (MSt)
 
 class FamosManager
@@ -79,6 +82,7 @@ class FamosManager
  private:
 
   const RandomEngine* random;
+  MuonServiceProxy *theService;
 
 };
                        

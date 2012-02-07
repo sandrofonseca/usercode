@@ -66,8 +66,10 @@ MaterialEffects::MaterialEffects(const edm::ParameterSet& matEff,
  if ( doMuonBremsstrahlung ) {
 
     double bremEnergy = matEff.getParameter<double>("bremEnergy");
+//    double bremEnergyFraction = matEff.getParameter<double>("bremEnergyFraction");
     MuonBremsstrahlung = new MuonBremsstrahlungSimulator(random,A,Z,density,radLen,bremEnergy);
-  
+//    MuonBremsstrahlung = new MuonBremsstrahlungSimulator(random,A,Z,density,radLen,bremEnergy,                                                 bremEnergyFraction);
+
   }
 
 
