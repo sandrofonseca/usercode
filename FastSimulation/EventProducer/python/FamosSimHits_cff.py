@@ -5,6 +5,7 @@ import FWCore.ParameterSet.Config as cms
 #from FastSimulation.Event.Early10TeVCollisionVertexGenerator_cfi import *
 from FastSimulation.Event.Realistic7TeV2011CollisionVertexGenerator_cfi import *
 from FastSimulation.Event.ParticleFilter_cfi import *
+from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
 from FastSimulation.MaterialEffects.MaterialEffects_cfi import *
 from FastSimulation.TrajectoryManager.ActivateDecays_cfi import *
 from FastSimulation.TrajectoryManager.TrackerSimHits_cfi import *
@@ -20,6 +21,8 @@ famosSimHits = cms.EDProducer("FamosProducer",
     MaterialEffectsForMuonsInECALBlock,
     # Material effects for muons in HCAL
     MaterialEffectsForMuonsInHCALBlock,
+    # Services
+     MuonServiceProxy,
     # (De)activate decays of unstable particles (K0S, etc...)
     ActivateDecaysBlock,
     # Kinematic cuts for the particle filter in the SimEvent
