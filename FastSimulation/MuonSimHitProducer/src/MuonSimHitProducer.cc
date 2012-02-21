@@ -613,8 +613,9 @@ MuonSimHitProducer::applyMaterialEffects(TrajectoryStateOnSurface& tsosWithdEdx,
   ParticlePropagator theMuon(momentum,position,charge,0);
   theMuon.setID(-(int)charge*13);
 
-  // Recompute the energy loss to get the fluctuations
-  if ( energyLoss ) { 
+  // Recompute the energy loss to get the fluctuations and include the contribution of Muon Brem
+
+  if ( energyLoss || bremsstrahlung) { 
     // Difference between with and without dE/dx (average only)
     // (for corrections once fluctuations are applied)
     GlobalPoint gPosWithdEdx = tsosWithdEdx.globalPosition();
@@ -684,13 +685,6 @@ theNewMomentum = theMuon.momentum() + energyLoss->deltaMom() + fac * deltaMom;
     multipleScattering->updateState(theMuon,radPath);
   }
   
-  // Muon Bremsstrahlung
-  if ( bremsstrahlung ) {
-    // Compute the amount of Muon Bremsstrahlung after given path length
-    bremsstrahlung->updateState(theMuon,radPath);
-  }
-
-
   // Fill the propagated state
   GlobalPoint propagatedPosition(theMuon.X(),theMuon.Y(),theMuon.Z());
   GlobalVector propagatedMomentum(theMuon.Px(),theMuon.Py(),theMuon.Pz());
