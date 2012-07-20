@@ -1556,13 +1556,13 @@ void CalorimetryManager::MuonMipSimulation(const FSimTrack& myTrack)
 
 	    // The energy loss simulator
 	    //float charge = (float)(myTrack.charge());
-	    //ParticlePropagator theMuon(moment,trackPosition,charge,0);
-            ParticlePropagator theMuon(moment_shsDest,trackPosition_shsDest,charge,0);
+	    ParticlePropagator theMuon(moment,trackPosition,charge,0);
+            //ParticlePropagator theMuon(moment_shsDest,trackPosition_shsDest,charge,0);
 	    theMuon.setID(-(int)charge*13);
 	    energyLossHCAL->updateState(theMuon, segmentSizeinX0);
-	    //mipenergy = energyLossHCAL->deltaMom().E();
+	    mipenergy = energyLossHCAL->deltaMom().E();
             //Energy correction due effect of Mag Field´on Muon Trajectory on HCAL
-            mipenergy = (energyLossHCAL->deltaMom().E() + fabs(delta_energy));
+          //  mipenergy = (energyLossHCAL->deltaMom().E() + fabs(delta_energy));
 	    moment -= energyLossHCAL->deltaMom();
 	     //Implementation of Muon Brem in HCAL (only applied if also energyLossHCAL is switched on)     
             if (muonBremHCAL){
@@ -1700,6 +1700,7 @@ if( debug_ ) {
   endmapitr=myHcalHitMaker.getHits().end();
   for(mapitr=myHcalHitMaker.getHits().begin(); mapitr!=endmapitr; ++mapitr) {
     double energy = mapitr->second;
+    energy *= 0.17;//Energy correction in HCAL for muons
     {
       updateMap(HcalDetId(mapitr->first).hashed_index(),energy,myTrack.id(),HMapping_,firedCellsHCAL_);
     }
