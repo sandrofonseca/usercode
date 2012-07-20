@@ -1700,7 +1700,7 @@ if( debug_ ) {
   endmapitr=myHcalHitMaker.getHits().end();
   for(mapitr=myHcalHitMaker.getHits().begin(); mapitr!=endmapitr; ++mapitr) {
     double energy = mapitr->second;
-    energy *= 0.17;//Energy correction in HCAL for muons
+    energy *= 0.20;//Energy correction in HCAL for muons
     {
       updateMap(HcalDetId(mapitr->first).hashed_index(),energy,myTrack.id(),HMapping_,firedCellsHCAL_);
     }
